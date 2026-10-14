@@ -49,3 +49,15 @@ def extract_chamado(myTimer: func.TimerRequest) -> None:
     except Exception as e:
         logging.error(f"Erro ao ler itsm.chamado: {str(e)}")
         raise
+
+
+
+
+
+
+@app.timer_trigger(schedule="0 * * * * *", arg_name="myTimer", run_on_startup=False,
+              use_monitor=False) 
+def teste_cd(myTimer: func.TimerRequest) -> None:
+   pass
+
+
