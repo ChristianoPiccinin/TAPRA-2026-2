@@ -52,10 +52,13 @@ def extract_chamado(myTimer: func.TimerRequest) -> None:
 
             logging.info(f'{len(rows)} linhas lidas de itsm.chamado')
 
-        # Converte o resultado para CSV (com cabeçalho)
+        # Cria um buffer de memória para armazenar os dados CSV
         buffer = io.StringIO()
+        # Cria um objeto CSV writer e escreve os dados no buffer
         writer = csv.writer(buffer)
+        # Escreve o cabeçalho e as linhas no buffer CSV
         writer.writerow(columns)
+        # Escreve todas as linhas no buffer CSV
         writer.writerows(rows)
 
         # Grava o arquivo no contêiner bronze do Data Lake, particionado por data
@@ -65,8 +68,11 @@ def extract_chamado(myTimer: func.TimerRequest) -> None:
         #itsm/chamado/year=2024/month=06/day=05/chamado_20240605_123456.csv
         #file_path = f"itsm/chamado/year={now:%Y}/month={now:%m}/day={now:%d}/chamado_{now:%Y%m%d_%H%M%S}.csv"
 
+        # Cria o cliente do Data Lake e grava o arquivo no contêiner bronze
         datalake = DataLakeServiceClient.from_connection_string(os.getenv("DATALAKE_CONNECTION_STRING"))
+        # Cria o cliente do sistema de arquivos e grava o arquivo no contêiner bronze
         file_client = datalake.get_file_system_client("bronze").get_file_client(file_path)
+        # Grava os dados do buffer no arquivo do Data Lake, sobrescrevendo se já existir
         file_client.upload_data(buffer.getvalue().encode("utf-8"), overwrite=True)
 
         logging.info(f'Arquivo gravado em bronze/{file_path}')
