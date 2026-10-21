@@ -1,7 +1,12 @@
+import csv
+import io
 import logging
 import os
+from datetime import datetime, timezone
+
 import pyodbc
 import azure.functions as func
+from azure.storage.filedatalake import DataLakeServiceClient
 
 app = func.FunctionApp()
 
@@ -43,21 +48,27 @@ def extract_chamado(myTimer: func.TimerRequest) -> None:
 
             # Busca todos os resultados da consulta
             rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
 
-            logging.info(rows)
+            logging.info(f'{len(rows)} linhas lidas de itsm.chamado')
+
+        # Converte o resultado para CSV (com cabeçalho)
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(columns)
+        writer.writerows(rows)
+
+        # Grava o arquivo no contêiner bronze do Data Lake, particionado por data
+        now = datetime.now(timezone.utc)
+        file_path = f"chamado/{now:%Y/%m/%d}/chamado_{now:%Y%m%d_%H%M%S}.csv"
+
+        datalake = DataLakeServiceClient.from_connection_string(os.getenv("DATALAKE_CONNECTION_STRING"))
+        file_client = datalake.get_file_system_client("bronze").get_file_client(file_path)
+        file_client.upload_data(buffer.getvalue().encode("utf-8"), overwrite=True)
+
+        logging.info(f'Arquivo gravado em bronze/{file_path}')
 
     except Exception as e:
         logging.error(f"Erro ao ler itsm.chamado: {str(e)}")
         raise
-
-
-
-
-
-
-@app.timer_trigger(schedule="0 * * * * *", arg_name="myTimer", run_on_startup=False,
-              use_monitor=False) 
-def teste_cd(myTimer: func.TimerRequest) -> None:
-   pass
-
 
