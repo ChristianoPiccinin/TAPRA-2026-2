@@ -62,6 +62,9 @@ def extract_chamado(myTimer: func.TimerRequest) -> None:
         now = datetime.now(timezone.utc)
         file_path = f"chamado/{now:%Y/%m/%d}/chamado_{now:%Y%m%d_%H%M%S}.csv"
 
+        #itsm/chamado/year=2024/month=06/day=05/chamado_20240605_123456.csv
+        #file_path = f"itsm/chamado/year={now:%Y}/month={now:%m}/day={now:%d}/chamado_{now:%Y%m%d_%H%M%S}.csv"
+
         datalake = DataLakeServiceClient.from_connection_string(os.getenv("DATALAKE_CONNECTION_STRING"))
         file_client = datalake.get_file_system_client("bronze").get_file_client(file_path)
         file_client.upload_data(buffer.getvalue().encode("utf-8"), overwrite=True)
